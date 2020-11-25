@@ -1,0 +1,53 @@
+version: '3.6'
+
+services:
+
+  # Gateway
+  php-fpm:
+    container_name: ${CONTAINER_NAME}_php-fpm
+    build:
+      args: 
+        WORKFOLDER: "${WORKFOLDER}"
+      context: .
+      target: base
+    ports:
+      - '${PHP_PORT}:9500'
+    volumes:
+      - './:${WORKFOLDER}:rw,delegated'
+      - './docker/php/conf/php.ini:/usr/local/etc/php/php.ini'
+    restart: always
+  
+  # Web server
+  nginx:
+    container_name: ${CONTAINER_NAME}_nginx
+    image: nginx
+    ports: 
+      - '${NGINX_PORT}:80'
+    links:
+      - php-fpm
+    volumes:
+      - './:${WORKFOLDER}:rw'
+      - './docker/nginx/conf/core/nginx.conf:/etc/nginx/nginx.conf'
+      - './docker/nginx/conf/development/notepad.conf:/etc/nginx/conf.d/default.conf'
+      #- './docker/nginx/conf/production/notepad.conf:/etc/nginx/conf.d/default.conf'
+      - './docker/nginx/logs/:/var/log/nginx'
+    restart: always
+
+  # Database
+  mysql:
+    container_name: ${CONTAINER_NAME}_mysql
+    image: mysql:5.7
+    ports:
+      - '${MYSQL_PORT}:3306'
+    environment: 
+      MYSQL_DATABASE: '${MYSQL_DBNAME}'
+      MYSQL_USER: '${MYSQL_USER}'
+      MYSQL_PASSWORD: '${MYSQL_PASSWORD}'
+      MYSQL_ROOT_PASSWORD: '${MYSQL_ROOT_PASSWORD}'
+    volumes:
+      - 'mysql:/var/lib/mysql'
+    restart: always
+
+volumes:
+  db-data: {}
+  mysql: 
